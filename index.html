@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <meta name="og:site_name" content="Gophermap Editor" />
+    <meta name="og:title" content="Gophermap Editor" />
+    <meta name="og:description" content="Create Gophermaps and menus in your browser">
+    <meta name="theme-color" content="#333333" />
+    <title>Gophermap Editor</title>
+    <style>
+      body {
+        background-color: black;
+        color: white;
+        font-family: monospace;
+      }
+
+      input, textarea {
+        background-color: black;
+        color: white;
+        border: 0;
+        font-family: monospace;
+        width: 100%;
+      }
+
+      a {
+        color: white;
+      }
+      
+      .bold {
+        font-weight: bold;
+      }
+
+      #gmap:first-child {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+
+  <body>
+    <table style="width: 100%">
+      <td width="150">
+        <b>Gophermap Editor</b>
+      </td>
+      <td align="center" width="100%">
+        Add.. <a href="javascript:addSelector('i', 'Information', '', '', '')">Text block</a>, <a href="javascript:addSelector('0', 'File', 'file.txt', '', '')">File</a>, <a href="javascript:addSelector('1', 'Subdirectory', 'directory/', '', '')">Directory</a>, <a href="javascript:addSelector('h', 'Website', 'URL:http://example.com', '', '')">URL</a>
+      </td>
+      <td align="right">
+        <button onclick="do_make()">Export</button>
+      </td>
+    </table>
+    <table id="gmap" cellpadding="5" width="100%">
+      <tr class="nodrag nodrop bold">
+        <td></td>
+        <td>
+          Item Type
+        </td>
+        <td>
+          Display text
+        </td>
+        <td>
+          Selector
+        </td>
+        <td>
+          Hostname
+        </td>
+        <td>
+          Port
+        </td>
+        <td></td>
+      </tr>
+    </table>
+    <br>
+    <strong>Gopher menu options</strong><br>
+    <table cellpadding="5">
+      <tr>
+        <td>
+          <label for="pwd">Current directory (from root):</label>
+        </td>
+        <td>
+          <input type="text" value="/" name="pwd" id="pwd">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label for="host">Default hostname:</label>
+        </td>
+        <td>
+          <input type="text" value="127.0.0.1" name="host" id="host">
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label for="port">Default port:</label>
+        </td>
+        <td>
+          <input type="text" value="70" name="port" id="port">
+        </td>
+      </tr>
+    </table>
+
+    <pre><code id="output"></code></pre>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/TableDnD/1.0.3/jquery.tablednd.min.js"></script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+          // Initialise the table
+          $("#gmap").tableDnD();
+      });
+
+      /* https://stackoverflow.com/a/17606289 */
+      String.prototype.replaceAll = function(search, replacement) {
+          var target = this;
+          return target.split(search).join(replacement);
+      };
+
+      function addSelector(type, text, selector, hostname, port) {
+          function is(t) {
+            if (type == t) {
+              return ' selected';
+            } else {
+              return '';
+            }
+          }
+
+          $("#gmap").append(`<tr> <td>:</td><td> <select> <option value="i"${is('i')}>(i) Information</option> <option value="0"${is('0')}>(0) Text file</option> <option value="1"${is('1')}>(1) Directory</option> <option value="5"${is('5')}>(5) PC Binary</option> <option value="7"${is('7')}>(7) Search Service</option> <option value="9"${is('9')}>(9) Binary</option> <option value="g"${is('g')}>(g) GIF image</option> <option value="I"${is('I')}}>(I) Generic image</option> <option value="s"${is('s')}>(s) Sound file</option> <option value="h"${is('h')}>(h) HTML file</option> </select> </td><td width="100%"><textarea>${text}</textarea></td><td><input type="text" value="${selector}"></div></td><td><input type="text" value="${hostname}"></div></td><td> <input type="text" value="${port}"></div></td><td> <a href="#" class="delete">Delete</a> </td></tr>`);
+          $("#gmap").tableDnD()
+
+          $(document).on('click', '.delete', function () {
+              $(this).closest('tr').remove();
+              return false;
+          });
+      }
+
+      function make(strict) {
+        output = ''
+        
+        var pwd = document.getElementById('pwd').value
+        var defhost = document.getElementById('host').value
+        var defport = document.getElementById('port').value
+
+        if (pwd.startsWith('/')) {} else {
+          pwd = '/' + pwd
+        }
+        if (defhost) {} else {
+          defhost = '127.0.0.1'
+        }
+        if (defport) {} else {
+          defport = '70'
+        }
+
+        /* https://stackoverflow.com/a/13350381 */
+        var table = document.getElementById("gmap");
+        var typ = 'i'
+        var text = ''
+        var selector = ''
+        var hostname = ''
+        var port = ''
+        var r = 1;
+        while(row = table.rows[r++])
+        {
+          var c = 0;
+          while(cell = row.cells[c++])
+          {
+            if (c == 2) {
+              typ = cell.firstElementChild.value; 
+            }
+            if (c == 3) {
+              text = cell.firstElementChild.value; 
+            }
+            if (c == 4) {
+              selector = cell.firstElementChild.value; 
+            }
+            if (c == 5) {
+              hostname = cell.firstElementChild.value; 
+            }
+            if (c == 6) {
+              port = cell.firstElementChild.value; 
+            }
+          }
+          if (typ == 'i') {
+            lines = text.replaceAll('\r\n', '\n').replaceAll('<div>', '\n').replaceAll('</div>', '').replaceAll('<br>', '').replaceAll('\t', '    ').split('\n')
+            lines.forEach(function(line) {
+              if (strict) {
+                output += 'i' + line + '\t/\terror.host\t1\r\n'
+              } else {
+                output += line + '\r\n'
+              }
+            })
+          } else {
+            lines = text.replaceAll('\r\n', '\n').replaceAll('<div>', '\n').replaceAll('</div>', '').replaceAll('<br>', '').replaceAll('\t', '    ').split('\n')
+            lines.forEach(function(line) {
+              output += typ + line 
+              if (selector) {
+                if (strict) {
+                  if (selector.startsWith('/') || selector.startsWith('URL:')) {
+                    output += '\t' + selector
+                  } else {
+                    output += '\t' + pwd + selector
+                  }
+                } else {
+                  output += '\t' + selector
+                }
+              } else {
+                if (strict) {
+                  output += '\t' + pwd
+                }
+              }
+              if (hostname) {
+                output += '\t' + hostname
+              } else {
+                if (strict) {
+                  output += '\t' + defhost
+                }
+              }
+              if (port) {
+                output += '\t' + port
+              } else {
+                if (strict) {
+                  output += '\t' + defport
+                }
+              }
+              output += '\r\n'
+            })
+          }
+        }
+        return output
+      }
+      function do_make() {
+        output = document.getElementById('output')
+        output.innerHTML = '<strong>Gophermap (for Bucktooth, Pygopherd, Gophernicus, Pituophis etc.)</strong><br><br>' + make(false) + '<br><br><strong>(strict) Gopher menu</strong><br><br>' + make(true)
+      }
+      addSelector('i', 'Information', '', '', '')
+    </script>
+  </body>
+
+</html>
